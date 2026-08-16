@@ -41,9 +41,32 @@ production. In Go you would typically hand-roll this with a `docker-compose.yml`
 In production Dev Services is inactive. The URL must be supplied or the app refuses
 to start, which is the correct failure.
 
+### Proving it, rather than eyeballing `docker ps`
+
+`DevServicesTest` asserts it instead of trusting a screenshot:
+
+- `DatabaseMetaData.getDatabaseProductName()` is `"PostgreSQL"` — a real server, not H2.
+- `quarkus.datasource.jdbc.url` resolves to `jdbc:postgresql://localhost:<random port>`,
+  which is the Testcontainers signature. Nothing in this repo ever wrote that URL.
+- `select 1 + 1` returns `2` over a genuine JDBC connection.
+
+`@QuarkusTest` boots the whole application once for the test class — real CDI, real
+datasource, real HTTP server on port 8081. It is closer to Go's `TestMain` spinning up
+the full server than to a unit test with mocks. It is slower than a plain JUnit test and
+worth it: you are testing the wiring, not just the logic.
+
+`@Inject` is CDI — Quarkus constructs the `DataSource` and hands it to the field. There
+is no `new` and no constructor call anywhere. Coming from Go, this is the biggest
+adjustment: object graphs are wired by the framework at build time, not assembled by
+hand in `main()`.
+
+One trap in the log: Hibernate prints `Database version: 14.0`. That is the *dialect's*
+minimum compatibility level, not the server version. The actual server is Postgres 18 —
+which is what the test asserts against, and why asserting beats reading logs.
+
 ### Schema generation
 
-`quarkus.hibernate-orm.database.generation=drop-and-create` rebuilds every table from
+`quarkus.hibernate-orm.schema-management.strategy=drop-and-create` rebuilds every table from
 the Java entity classes on each start. It means Phase 1 needs no migration files: you
 write a class, restart, and the table exists.
 

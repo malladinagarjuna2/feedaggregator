@@ -1,0 +1,67 @@
+### Sample requests. Usable with the IntelliJ/VS Code REST client, or read as
+### documentation. Change @host if you started dev mode on another port.
+
+@host = http://localhost:8080
+
+### Add the real Hacker News front page feed
+POST {{host}}/feeds
+Content-Type: application/json
+
+{"name": "hn", "url": "https://hn.algolia.com/api/v1/search?tags=front_page"}
+
+### Add a feed that will fail, to see partial failure handling
+POST {{host}}/feeds
+Content-Type: application/json
+
+{"name": "broken", "url": "https://hn.algolia.com/api/v1/not-a-real-endpoint"}
+
+### Rejected: scheme must be http or https
+POST {{host}}/feeds
+Content-Type: application/json
+
+{"name": "ftp feed", "url": "ftp://example.com/feed"}
+
+### Rejected: name must not be blank
+POST {{host}}/feeds
+Content-Type: application/json
+
+{"name": "   ", "url": "https://example.com/feed"}
+
+### Rejected: url must be absolute
+POST {{host}}/feeds
+Content-Type: application/json
+
+{"name": "relative", "url": "not-a-url"}
+
+### List feeds. Watch lastFetchedAt, lastAttemptedAt and lastError.
+GET {{host}}/feeds
+
+### Fetch now. Run this twice: the second reports created 0, updated N.
+POST {{host}}/refresh
+
+### All items, newest first
+GET {{host}}/items
+
+### Case-insensitive title search
+GET {{host}}/items?q=ai
+
+### Search within one feed
+GET {{host}}/items?q=ai&feedId=1
+
+### Page 1 and page 2. Every item appears exactly once across them.
+GET {{host}}/items?limit=2&offset=0
+
+###
+GET {{host}}/items?limit=2&offset=2
+
+### limit is clamped to 100
+GET {{host}}/items?limit=5000
+
+### 400: offset must not be negative
+GET {{host}}/items?offset=-1
+
+### 400: limit must be at least 1
+GET {{host}}/items?limit=0
+
+### Delete a feed. Its items go with it. 404 if unknown.
+DELETE {{host}}/feeds/1

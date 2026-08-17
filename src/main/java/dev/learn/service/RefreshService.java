@@ -49,7 +49,16 @@ public class RefreshService {
             return FeedRefreshResult.success(feedId, name, result.created(), result.updated(), result.skipped());
         } catch (RuntimeException e) {
             LOG.warnf("feed %d (%s) failed to refresh: %s", feedId, name, e.getMessage());
+            recordFailureQuietly(feedId, e.getMessage());
             return FeedRefreshResult.failure(feedId, name, e.getMessage());
+        }
+    }
+
+    private void recordFailureQuietly(Long feedId, String error) {
+        try {
+            ingestor.recordFailure(feedId, error);
+        } catch (RuntimeException e) {
+            LOG.warnf("could not record failure for feed %d: %s", feedId, e.getMessage());
         }
     }
 }

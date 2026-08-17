@@ -18,6 +18,7 @@ public class ItemIngestor {
 
     private static final int MAX_TITLE_LENGTH = 1000;
     private static final int MAX_URL_LENGTH = 2048;
+    private static final int MAX_ERROR_LENGTH = 1000;
 
     private final FeedRepository feeds;
     private final ItemRepository items;
@@ -64,8 +65,21 @@ public class ItemIngestor {
             }
         }
 
-        feed.setLastFetchedAt(Instant.now());
+        Instant now = Instant.now();
+        feed.setLastFetchedAt(now);
+        feed.setLastAttemptedAt(now);
+        feed.setLastError(null);
         return new IngestResult(created, updated, skipped);
+    }
+
+    @Transactional
+    public void recordFailure(long feedId, String error) {
+        Feed feed = feeds.findById(feedId);
+        if (feed == null) {
+            return;
+        }
+        feed.setLastAttemptedAt(Instant.now());
+        feed.setLastError(truncate(error, MAX_ERROR_LENGTH));
     }
 
     private static boolean isBlank(String value) {

@@ -179,6 +179,36 @@ class RefreshTest {
     }
 
     @Test
+    void failedFetchesAreRecordedOnTheFeed() {
+        Long feedId = createFeed("broken", brokenUrl.toString());
+
+        given().when().post("/refresh").then().statusCode(200).body("failed", equalTo(1));
+
+        Feed feed = QuarkusTransaction.requiringNew().call(() -> feeds.findById(feedId));
+        org.junit.jupiter.api.Assertions.assertNull(feed.getLastFetchedAt(),
+                "a failed fetch must not look like a successful one");
+        org.junit.jupiter.api.Assertions.assertNotNull(feed.getLastAttemptedAt());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                feed.getLastError().contains("HTTP 500"),
+                "unexpected error text: " + feed.getLastError());
+    }
+
+    @Test
+    void aFeedThatRecoversClearsItsLastError() {
+        Long feedId = createFeed("flaky", brokenUrl.toString());
+        given().when().post("/refresh").then().statusCode(200).body("failed", equalTo(1));
+
+        QuarkusTransaction.requiringNew().run(
+                () -> feeds.findById(feedId).setUrl(stubUrl.toString()));
+
+        given().when().post("/refresh").then().statusCode(200).body("succeeded", equalTo(1));
+
+        Feed feed = QuarkusTransaction.requiringNew().call(() -> feeds.findById(feedId));
+        org.junit.jupiter.api.Assertions.assertNull(feed.getLastError());
+        org.junit.jupiter.api.Assertions.assertNotNull(feed.getLastFetchedAt());
+    }
+
+    @Test
     void unknownJsonFieldsDoNotBreakParsing() {
         createFeed("stub", stubUrl.toString());
 

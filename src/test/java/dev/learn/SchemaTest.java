@@ -68,7 +68,8 @@ class SchemaTest {
         // Note the naming: lastFetchedAt became last_fetched_at. Hibernate converts
         // camelCase field names to snake_case columns by default.
         assertEquals(
-                List.of("enabled", "id", "last_fetched_at", "name", "url"),
+                List.of("enabled", "id", "last_attempted_at", "last_error",
+                        "last_fetched_at", "name", "url"),
                 columns);
     }
 

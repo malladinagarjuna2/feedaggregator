@@ -26,7 +26,9 @@ public record FeedResponse(
         String name,
         String url,
         boolean enabled,
-        Instant lastFetchedAt) {
+        Instant lastFetchedAt,
+        Instant lastAttemptedAt,
+        String lastError) {
 
     public static FeedResponse from(Feed feed) {
         return new FeedResponse(
@@ -34,6 +36,8 @@ public record FeedResponse(
                 feed.getName(),
                 feed.getUrl(),
                 feed.isEnabled(),
-                feed.getLastFetchedAt());
+                feed.getLastFetchedAt(),
+                feed.getLastAttemptedAt(),
+                feed.getLastError());
     }
 }
